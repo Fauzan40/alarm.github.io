@@ -552,18 +552,19 @@
         // Download template
         function downloadTemplate() {
             const templateData = [
-                ['Waktu', 'Judul', 'Deskripsi', 'Status'],
-                ['08:00', 'Meeting Tim', 'Rapat koordinasi mingguan', 'Aktif'],
-                ['14:30', 'Minum Obat', 'Reminder minum obat siang', 'Aktif'],
-                ['18:00', 'Olahraga', 'Waktu untuk berolahraga', 'Aktif'],
-                ['07:00', 'Bangun Pagi', 'Alarm bangun pagi', 'Aktif'],
-                ['22:00', 'Tidur', 'Waktu untuk tidur', 'Aktif']
+                ['Waktu', 'Status'],
+                ['07:00', 'Aktif'],
+                ['08:00', 'Aktif'],
+                ['12:00', 'Aktif'],
+                ['14:30', 'Aktif'],
+                ['18:00', 'Aktif'],
+                ['22:00', 'Aktif']
             ];
             
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.aoa_to_sheet(templateData);
             XLSX.utils.book_append_sheet(wb, ws, 'Alarm Data');
-            XLSX.writeFile(wb, 'template_alarm_harian.xlsx');
+            XLSX.writeFile(wb, 'template_alarm_sederhana.xlsx');
             
             showNotification('📥 Template Excel berhasil didownload!');
         }
