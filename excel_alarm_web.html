@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Alarm Online - Excel Import</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .upload-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 2px dashed #ddd;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: #667eea;
+            background: #f0f2ff;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .current-time {
+            background: #fff;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .time-display {
+            font-size: 3em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .date-display {
+            font-size: 1.2em;
+            color: #666;
+        }
+
+        .alarms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .alarm-card {
+            background: #fff;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border-left: 5px solid #667eea;
+        }
+
+        .alarm-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .alarm-card.active {
+            border-left-color: #28a745;
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        }
+
+        .alarm-card.triggered {
+            border-left-color: #dc3545;
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        .alarm-time {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .alarm-title {
+            font-size: 1.3em;
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        .alarm-description {
+            color: #777;
+            margin-bottom: 15px;
+        }
+
+        .alarm-status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .status-waiting {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-triggered {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .format-info {
+            background: #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .format-info h3 {
+            color: #495057;
+            margin-bottom: 15px;
+        }
+
+        .format-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .format-table th,
+        .format-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        .format-table th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+
+        .download-template {
+            background: #17a2b8;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .download-template:hover {
+            background: #138496;
+            transform: translateY(-2px);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background: #28a745;
+        }
+
+        .notification.error {
+            background: #dc3545;
+        }
+
+        .notification.alarm {
+            background: #ff6b6b;
+            box-shadow: 0 5px 20px rgba(255, 107, 107, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔔 Web Alarm Online</h1>
+            <p>Upload file Excel untuk mengatur alarm otomatis</p>
+        </div>
+
+        <div class="upload-section">
+            <h3>Upload File Excel</h3>
+            <p>Pilih file Excel (.xlsx, .xls) yang berisi data alarm</p>
+            <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls" />
+            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                📁 Pilih File Excel
+            </button>
+            <div id="fileInfo" style="margin-top: 15px; color: #666;"></div>
+        </div>
+
+        <div class="current-time">
+            <div class="time-display" id="currentTime">00:00:00</div>
+            <div class="date-display" id="currentDate">Loading...</div>
+        </div>
+
+        <div id="alarmsContainer">
+            <div style="text-align: center; padding: 40px; color: #666;">
+                <h3>Belum ada alarm yang dimuat</h3>
+                <p>Upload file Excel untuk menampilkan alarm</p>
+            </div>
+        </div>
+
+        <div class="format-info">
+            <h3>📋 Format File Excel</h3>
+            <p>File Excel harus memiliki kolom-kolom berikut (alarm akan aktif setiap hari):</p>
+            <table class="format-table">
+                <thead>
+                    <tr>
+                        <th>Kolom A</th>
+                        <th>Kolom B</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Waktu</td>
+                        <td>Status</td>
+                    </tr>
+                    <tr>
+                        <td>08:00</td>
+                        <td>Aktif</td>
+                    </tr>
+                    <tr>
+                        <td>14:30</td>
+                        <td>Aktif</td>
+                    </tr>
+                    <tr>
+                        <td>18:00</td>
+                        <td>Aktif</td>
+                    </tr>
+                    <tr>
+                        <td>22:00</td>
+                        <td>Aktif</td>
+                    </tr>
+                </tbody>
+            </table>
+            <button class="download-template" onclick="downloadTemplate()">
+                ⬇️ Download Template Excel
+            </button>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script>
+        let alarms = [];
+        let checkInterval;
+
+        // Update waktu saat ini
+        function updateCurrentTime() {
+            const now = new Date();
+            const timeOptions = { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                hour12: false
+            };
+            const dateOptions = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            
+            document.getElementById('currentTime').textContent = now.toLocaleTimeString('id-ID', timeOptions);
+            document.getElementById('currentDate').textContent = now.toLocaleDateString('id-ID', dateOptions);
+        }
+
+        // Show notification
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type} show`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Play alarm sound (beep)
+        function playAlarmSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            gainNode.gain.value = 0.3;
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.5);
+            
+            // Repeat beep 3 times
+            setTimeout(() => {
+                const osc2 = audioContext.createOscillator();
+                const gain2 = audioContext.createGain();
+                osc2.connect(gain2);
+                gain2.connect(audioContext.destination);
+                osc2.frequency.value = 800;
+                osc2.type = 'sine';
+                gain2.gain.value = 0.3;
+                osc2.start();
+                osc2.stop(audioContext.currentTime + 0.5);
+            }, 600);
+            
+            setTimeout(() => {
+                const osc3 = audioContext.createOscillator();
+                const gain3 = audioContext.createGain();
+                osc3.connect(gain3);
+                gain3.connect(audioContext.destination);
+                osc3.frequency.value = 800;
+                osc3.type = 'sine';
+                gain3.gain.value = 0.3;
+                osc3.start();
+                osc3.stop(audioContext.currentTime + 0.5);
+            }, 1200);
+        }
+
+        // Check alarms
+        function checkAlarms() {
+            const now = new Date();
+            const currentTime = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false });
+            
+            alarms.forEach(alarm => {
+                // Reset status setiap hari jika sudah triggered
+                if (alarm.status === 'Triggered' && alarm.lastTriggered !== getTodayString()) {
+                    alarm.status = 'Aktif';
+                }
+                
+                // Check if current time matches alarm time
+                if (alarm.status === 'Aktif' && alarm.time === currentTime) {
+                    // Cek apakah sudah triggered hari ini
+                    if (alarm.lastTriggered !== getTodayString()) {
+                        alarm.status = 'Triggered';
+                        alarm.lastTriggered = getTodayString();
+                        playAlarmSound();
+                        showNotification(`🔔 ALARM: ${alarm.time}`, 'alarm');
+                        renderAlarms();
+                    }
+                }
+            });
+        }
+
+        // Get today's date string
+        function getTodayString() {
+            return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format
+        }
+
+        // Render alarms
+        function renderAlarms() {
+            const container = document.getElementById('alarmsContainer');
+            
+            if (alarms.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #666;">
+                        <h3>Belum ada alarm yang dimuat</h3>
+                        <p>Upload file Excel untuk menampilkan alarm</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const alarmsGrid = document.createElement('div');
+            alarmsGrid.className = 'alarms-grid';
+
+            alarms.forEach(alarm => {
+                const alarmCard = document.createElement('div');
+                let statusClass = 'status-waiting';
+                let cardClass = 'alarm-card';
+                
+                if (alarm.status === 'Aktif') {
+                    statusClass = 'status-active';
+                    cardClass += ' active';
+                } else if (alarm.status === 'Triggered') {
+                    statusClass = 'status-triggered';
+                    cardClass += ' triggered';
+                }
+
+                alarmCard.className = cardClass;
+                alarmCard.innerHTML = `
+                    <div class="alarm-time">${alarm.time}</div>
+                    <div class="alarm-status ${statusClass}">${alarm.status}</div>
+                    <div style="margin-top: 15px; font-size: 0.9em; color: #888;">
+                        🔄 Berulang setiap hari
+                    </div>
+                `;
+                
+                alarmsGrid.appendChild(alarmCard);
+            });
+
+            container.innerHTML = '';
+            container.appendChild(alarmsGrid);
+        }
+
+        // Process Excel file
+        function processExcelFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    alarms = [];
+                    
+                    // Skip header row, start from row 1
+                    for (let i = 1; i < jsonData.length; i++) {
+                        const row = jsonData[i];
+                        if (row.length >= 5 && row[0] && row[1] && row[2]) {
+                            // Parse date
+                            let date = row[0];
+                            if (typeof date === 'number') {
+                                // Excel date number
+                                date = new Date((date - 25569) * 86400 * 1000);
+                                date = date.toISOString().split('T')[0];
+                            } else if (typeof date === 'string') {
+                                // Try to parse string date
+                                const parsed = new Date(date);
+                                if (!isNaN(parsed.getTime())) {
+                                    date = parsed.toISOString().split('T')[0];
+                                }
+                            }
+                            
+                            // Parse time
+                            let time = row[1];
+                            if (typeof time === 'number') {
+                                // Excel time number (fraction of day)
+                                const hours = Math.floor(time * 24);
+                                const minutes = Math.floor((time * 24 * 60) % 60);
+                                time = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                            } else if (typeof time === 'string') {
+                                // Ensure HH:MM format
+                                if (time.includes(':')) {
+                                    const parts = time.split(':');
+                                    time = `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+                                }
+                            }
+                            
+                            alarms.push({
+                                date: date,
+                                time: time,
+                                title: row[2] || 'No Title',
+                                description: row[3] || 'No Description',
+                                status: row[4] || 'Aktif'
+                            });
+                        }
+                    }
+                    
+                    renderAlarms();
+                    showNotification(`✅ Berhasil memuat ${alarms.length} alarm dari file Excel`);
+                    
+                    // Start checking alarms
+                    if (checkInterval) clearInterval(checkInterval);
+                    checkInterval = setInterval(checkAlarms, 1000);
+                    
+                } catch (error) {
+                    showNotification('❌ Error membaca file Excel: ' + error.message, 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Download template
+        function downloadTemplate() {
+            const templateData = [
+                ['Waktu', 'Judul', 'Deskripsi', 'Status'],
+                ['08:00', 'Meeting Tim', 'Rapat koordinasi mingguan', 'Aktif'],
+                ['14:30', 'Minum Obat', 'Reminder minum obat siang', 'Aktif'],
+                ['18:00', 'Olahraga', 'Waktu untuk berolahraga', 'Aktif'],
+                ['07:00', 'Bangun Pagi', 'Alarm bangun pagi', 'Aktif'],
+                ['22:00', 'Tidur', 'Waktu untuk tidur', 'Aktif']
+            ];
+            
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(templateData);
+            XLSX.utils.book_append_sheet(wb, ws, 'Alarm Data');
+            XLSX.writeFile(wb, 'template_alarm_harian.xlsx');
+            
+            showNotification('📥 Template Excel berhasil didownload!');
+        }
+
+        // File input handler
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const fileInfo = document.getElementById('fileInfo');
+                fileInfo.innerHTML = `
+                    <strong>File dipilih:</strong> ${file.name}<br>
+                    <strong>Ukuran:</strong> ${(file.size / 1024).toFixed(2)} KB<br>
+                    <strong>Tipe:</strong> ${file.type}
+                `;
+                processExcelFile(file);
+            }
+        });
+
+        // Initialize
+        updateCurrentTime();
+        setInterval(updateCurrentTime, 1000);
+    </script>
+</body>
+</html>
